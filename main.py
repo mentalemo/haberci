@@ -11,7 +11,7 @@ intents.message_content = True
 bot = discord.Client(intents=intents)
 
 APP_ID = 3678970
-CHECK_INTERVAL = 900
+CHECK_INTERVAL = 30
 DATA_FILE = "last_build.json"
 CHANNEL_ID = None
 
@@ -70,6 +70,7 @@ async def on_message(message):
     global CHANNEL_ID
     if message.author.bot:
         return
+    
     if message.content.lower() == "!setchannel":
         CHANNEL_ID = message.channel.id
         await message.channel.send("✅ Bu kanal artık TBH güncelleme bildirimleri için ayarlandı!")
@@ -78,4 +79,13 @@ async def on_message(message):
             with open(DATA_FILE, "w") as f:
                 json.dump({"buildid": current}, f)
 
-bot.run(os.getenv("DISCORD_TOKEN"))
+    # Test komutu
+    if message.content.lower() == "!testupdate":
+        channel = bot.get_channel(CHANNEL_ID)
+        if channel:
+            embed = discord.Embed(
+                title="🧪 TEST BİLDİRİMİ",
+                description="Bu bir test bildirimidir.\nBot çalışıyor!",
+                color=0xffaa00
+            )
+            await channel.send(embed=embed)
