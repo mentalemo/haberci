@@ -6,10 +6,12 @@ import os
 from datetime import datetime
 
 intents = discord.Intents.default()
+intents.message_content = True
+
 bot = discord.Client(intents=intents)
 
 APP_ID = 3678970
-CHECK_INTERVAL = 900  # 15 dakikada bir
+CHECK_INTERVAL = 900
 DATA_FILE = "last_build.json"
 CHANNEL_ID = None
 
@@ -28,6 +30,7 @@ def get_current_buildid():
 async def on_ready():
     print(f"{bot.user} olarak giriş yapıldı!")
     check_for_update.start()
+    print("Güncelleme kontrolü başlatıldı.")
 
 @tasks.loop(seconds=CHECK_INTERVAL)
 async def check_for_update():
@@ -69,7 +72,7 @@ async def on_message(message):
         return
     if message.content.lower() == "!setchannel":
         CHANNEL_ID = message.channel.id
-        await message.channel.send("✅ Bu kanal güncelleme bildirimleri için ayarlandı!")
+        await message.channel.send("✅ Bu kanal artık TBH güncelleme bildirimleri için ayarlandı!")
         current = get_current_buildid()
         if current:
             with open(DATA_FILE, "w") as f:
