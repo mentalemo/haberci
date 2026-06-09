@@ -11,26 +11,27 @@ intents.message_content = True
 bot = discord.Client(intents=intents)
 
 APP_ID = 3678970
-CHECK_INTERVAL = 30
+CHECK_INTERVAL = 60  # Test için 60 saniye (sonra 900 yapacağız)
 DATA_FILE = "last_build.json"
 CHANNEL_ID = None
 
 def get_current_buildid():
     try:
-        r = requests.get(f"https://api.steamcmd.net/v1/info/{APP_ID}", timeout=10)
+        r = requests.get(f"https://api.steamcmd.net/v1/info/{APP_ID}", timeout=15)
         if r.status_code == 200:
             data = r.json()
             buildid = data.get("data", {}).get("branches", {}).get("public", {}).get("buildid")
             return int(buildid) if buildid else None
-    except:
+    except Exception as e:
+        print(f"Build ID alınırken hata: {e}")
         return None
     return None
 
 @bot.event
 async def on_ready():
-    print(f"{bot.user} olarak giriş yapıldı!")
+    print(f"✅ {bot.user} olarak giriş yapıldı!")
     check_for_update.start()
-    print("Güncelleme kontrolü başlatıldı.")
+    print("Güncelleme kontrol döngüsü başlatıldı.")
 
 @tasks.loop(seconds=CHECK_INTERVAL)
 async def check_for_update():
@@ -64,13 +65,16 @@ async def check_for_update():
 
             with open(DATA_FILE, "w") as f:
                 json.dump({"buildid": current}, f)
+            print(f"Yeni build tespit edildi: {current}")
+        else:
+            print("Kanal bulunamadı.")
 
 @bot.event
 async def on_message(message):
     global CHANNEL_ID
     if message.author.bot:
         return
-    
+
     if message.content.lower() == "!setchannel":
         CHANNEL_ID = message.channel.id
         await message.channel.send("✅ Bu kanal artık TBH güncelleme bildirimleri için ayarlandı!")
@@ -78,14 +82,13 @@ async def on_message(message):
         if current:
             with open(DATA_FILE, "w") as f:
                 json.dump({"buildid": current}, f)
+            await message.channel.send(f"📊 Şu anki build: `{current}`")
 
-    # Test komutu
     if message.content.lower() == "!testupdate":
-        channel = bot.get_channel(CHANNEL_ID)
-        if channel:
-            embed = discord.Embed(
-                title="🧪 TEST BİLDİRİMİ",
-                description="Bu bir test bildirimidir.\nBot çalışıyor!",
-                color=0xffaa00
-            )
-            await channel.send(embed=embed)
+        if CHANNEL_ID:
+            channel = bot.get_channel(CHANNEL_ID)
+            if channel:
+                embed = discord.Embed(title="🧪 TEST BİLDİRİMİ", description="Bot çalışıyor! Her şey yolunda.", color=0xffaa00)
+                await channel.send(embed=embed)
+
+bot.run(os.getenv("DISCORD_TOKEN"))
